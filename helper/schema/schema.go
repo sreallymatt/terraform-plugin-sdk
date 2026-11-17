@@ -412,6 +412,9 @@ type Schema struct {
 	// output sensitive argument.
 	Sensitive bool
 
+	// WebsiteNotes ...
+	WebsiteNotes []Note
+
 	// WriteOnly indicates that the practitioner can choose a value for this
 	// attribute, but Terraform will not store this attribute in plan or state.
 	// WriteOnly can only be set for managed resource schemas. If WriteOnly is true,
@@ -663,7 +666,8 @@ func (m schemaMap) panicOnError() bool {
 // The diff is optional.
 func (m schemaMapWithIdentity) Data(
 	s *terraform.InstanceState,
-	d *terraform.InstanceDiff) (*ResourceData, error) {
+	d *terraform.InstanceDiff,
+) (*ResourceData, error) {
 	return &ResourceData{
 		schema:         m.schemaMap,
 		identitySchema: m.identitySchema,
@@ -678,7 +682,8 @@ func (m schemaMapWithIdentity) Data(
 // The diff is optional.
 func (m schemaMap) Data(
 	s *terraform.InstanceState,
-	d *terraform.InstanceDiff) (*ResourceData, error) {
+	d *terraform.InstanceDiff,
+) (*ResourceData, error) {
 	return schemaMapWithIdentity{m, nil}.Data(s, d)
 }
 
@@ -711,7 +716,8 @@ func (m schemaMapWithIdentity) Diff(
 	c *terraform.ResourceConfig,
 	customizeDiff CustomizeDiffFunc,
 	meta interface{},
-	handleRequiresNew bool) (*terraform.InstanceDiff, error) {
+	handleRequiresNew bool,
+) (*terraform.InstanceDiff, error) {
 	result := new(terraform.InstanceDiff)
 	result.Attributes = make(map[string]*terraform.ResourceAttrDiff)
 
@@ -899,7 +905,6 @@ func (m schemaMapWithIdentity) Diff(
 			// And set the diff!
 			result = result2
 		}
-
 	}
 
 	// Go through and detect all of the ComputedWhens now that we've
@@ -922,7 +927,8 @@ func (m schemaMap) Diff(
 	c *terraform.ResourceConfig,
 	customizeDiff CustomizeDiffFunc,
 	meta interface{},
-	handleRequiresNew bool) (*terraform.InstanceDiff, error) {
+	handleRequiresNew bool,
+) (*terraform.InstanceDiff, error) {
 	return schemaMapWithIdentity{m, nil}.Diff(ctx, s, c, customizeDiff, meta, handleRequiresNew)
 }
 
@@ -1288,8 +1294,8 @@ func (m schemaMap) diff(
 	schema *Schema,
 	diff *terraform.InstanceDiff,
 	d resourceDiffer,
-	all bool) error {
-
+	all bool,
+) error {
 	unsuppressedDiff := new(terraform.InstanceDiff)
 	unsuppressedDiff.Attributes = make(map[string]*terraform.ResourceAttrDiff)
 
@@ -1338,7 +1344,8 @@ func (m schemaMap) diffList(
 	schema *Schema,
 	diff *terraform.InstanceDiff,
 	d resourceDiffer,
-	all bool) error {
+	all bool,
+) error {
 	o, n, _, computedList, customized := d.diffChange(k)
 	if computedList {
 		n = nil
@@ -1465,7 +1472,8 @@ func (m schemaMap) diffMap(
 	schema *Schema,
 	diff *terraform.InstanceDiff,
 	d resourceDiffer,
-	all bool) error {
+	all bool,
+) error {
 	prefix := k + "."
 
 	// First get all the values from the state
@@ -1578,8 +1586,8 @@ func (m schemaMap) diffSet(
 	schema *Schema,
 	diff *terraform.InstanceDiff,
 	d resourceDiffer,
-	all bool) error {
-
+	all bool,
+) error {
 	o, n, _, computedSet, customized := d.diffChange(k)
 	if computedSet {
 		n = nil
@@ -1711,7 +1719,8 @@ func (m schemaMap) diffString(
 	schema *Schema,
 	diff *terraform.InstanceDiff,
 	d resourceDiffer,
-	all bool) error {
+	all bool,
+) error {
 	var originalN interface{}
 	var os, ns string
 	o, n, _, computed, customized := d.diffChange(k)
@@ -1826,8 +1835,8 @@ func (m schemaMap) validate(
 	k string,
 	schema *Schema,
 	c *terraform.ResourceConfig,
-	path cty.Path) diag.Diagnostics {
-
+	path cty.Path,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	raw, ok := c.Get(k)
@@ -1944,11 +1953,12 @@ func isWhollyKnown(raw interface{}) bool {
 	}
 	return true
 }
+
 func validateConflictingAttributes(
 	k string,
 	schema *Schema,
-	c *terraform.ResourceConfig) error {
-
+	c *terraform.ResourceConfig,
+) error {
 	if len(schema.ConflictsWith) == 0 {
 		return nil
 	}
@@ -1985,8 +1995,8 @@ func removeDuplicates(elements []string) []string {
 func validateRequiredWithAttribute(
 	k string,
 	schema *Schema,
-	c *terraform.ResourceConfig) error {
-
+	c *terraform.ResourceConfig,
+) error {
 	if len(schema.RequiredWith) == 0 {
 		return nil
 	}
@@ -2006,8 +2016,8 @@ func validateRequiredWithAttribute(
 func validateExactlyOneAttribute(
 	k string,
 	schema *Schema,
-	c *terraform.ResourceConfig) error {
-
+	c *terraform.ResourceConfig,
+) error {
 	if len(schema.ExactlyOneOf) == 0 {
 		return nil
 	}
@@ -2042,8 +2052,8 @@ func validateExactlyOneAttribute(
 func validateAtLeastOneAttribute(
 	k string,
 	schema *Schema,
-	c *terraform.ResourceConfig) error {
-
+	c *terraform.ResourceConfig,
+) error {
 	if len(schema.AtLeastOneOf) == 0 {
 		return nil
 	}
@@ -2067,8 +2077,8 @@ func (m schemaMap) validateList(
 	raw interface{},
 	schema *Schema,
 	c *terraform.ResourceConfig,
-	path cty.Path) diag.Diagnostics {
-
+	path cty.Path,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// first check if the list is wholly unknown
@@ -2159,8 +2169,8 @@ func (m schemaMap) validateMap(
 	raw interface{},
 	schema *Schema,
 	c *terraform.ResourceConfig,
-	path cty.Path) diag.Diagnostics {
-
+	path cty.Path,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// first check if the list is wholly unknown
@@ -2245,7 +2255,6 @@ func (m schemaMap) validateMap(
 }
 
 func validateMapValues(k string, m map[string]interface{}, schema *Schema, path cty.Path) diag.Diagnostics {
-
 	var diags diag.Diagnostics
 
 	for key, raw := range m {
@@ -2330,8 +2339,8 @@ func (m schemaMap) validateObject(
 	k string,
 	schema map[string]*Schema,
 	c *terraform.ResourceConfig,
-	path cty.Path) diag.Diagnostics {
-
+	path cty.Path,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	raw, _ := c.Get(k)
@@ -2382,8 +2391,8 @@ func (m schemaMap) validatePrimitive(
 	raw interface{},
 	schema *Schema,
 	c *terraform.ResourceConfig,
-	path cty.Path) diag.Diagnostics {
-
+	path cty.Path,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// a nil value shouldn't happen in the old protocol, and in the new
@@ -2490,8 +2499,8 @@ func (m schemaMap) validateType(
 	raw interface{},
 	schema *Schema,
 	c *terraform.ResourceConfig,
-	path cty.Path) diag.Diagnostics {
-
+	path cty.Path,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	switch schema.Type {
 	case TypeList:
